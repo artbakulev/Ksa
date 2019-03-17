@@ -1,0 +1,38 @@
+.centered {
+  text-align: center;
+  margin: 0; }
+
+#main {
+  margin-top: 50px; }
+
+#title {
+  text-align: center; }
+
+#tags, #rating {
+  text-align: center; }
+  #tags ul, #rating ul {
+    padding: 0;
+    list-style-type: none; }
+
+.media {
+  align-items: center; }
+  .media img {
+    align-self: start; }
+
+#pagination {
+  justify-content: center; }
+
+html {
+  height: 100%; }
+
+#registration {
+  background-color: lightblue;
+  height: 100%; }
+  #registration #a-cancel {
+    text-align: center; }
+  #registration .container {
+    height: 100%; }
+    #registration .container .row {
+      height: 100%; }
+
+/*# sourceMappingURL=main.css.map */
