@@ -1,10 +1,12 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 
 from forum.components import generate_paginator
 from forum.models import Question, Notification, Answer
+
 
 
 def index_view(request, page=1):
@@ -15,6 +17,7 @@ def index_view(request, page=1):
     else:
         sort_key = '-created'
     questions = Question.objects.order_by(sort_key)
+    # paginator = Paginator(questions, 5) # TODO: Переделай пагинатор
     questions, first_page, second_page, last_page = generate_paginator(questions, page)
     if request.user.is_authenticated:
         is_authenticated = True
