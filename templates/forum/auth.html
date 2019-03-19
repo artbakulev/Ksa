@@ -22,16 +22,22 @@
                 {% endif %}
                 <h3>KSA Auth</h3>
                 <hr>
-                <form method="post">{% csrf_token %}
+                <form method="post" class="needs-validation" novalidate>{% csrf_token %}
                     <div class="form-group">
                         <label for="inputLogin">Login</label>
                         <input type="text" class="form-control" id="username" name="username"
-                               placeholder="Enter login...">
+                               placeholder="Enter login..." required>
+                        <div class="invalid-feedback">
+                            Please enter login.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="inputPassword">Password</label>
                         <input type="password" class="form-control" id="password" name="password"
-                               placeholder="Enter password">
+                               placeholder="Enter password" required>
+                        <div class="invalid-feedback">
+                            Please enter password.
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Sign In</button>
                 </form>
@@ -44,5 +50,6 @@
 
     </div>
 </div>
+<script type="text/javascript" src="{% static "forum/js/bootstrap_validation_script.js" %}"></script>
 </body>
 </html>

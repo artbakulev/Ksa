@@ -21,36 +21,55 @@
                 {% endif %}
                 <a href="/"><h3>KSA Registration</h3></a>
                 <hr>
-                <form method="post">{% csrf_token %}
+                <form method="post" class="needs-validation" novalidate>{% csrf_token %}
                     <div class="form-group">
                         <label for="firstName">First name</label>
                         <input type="text" class="form-control" id="firstName" name="firstName"
-                               placeholder="Enter first name...">
+                               placeholder="Enter first name..." required>
+                        <div class="invalid-feedback">
+                            Please enter first name.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="lastName">Last name</label>
                         <input type="text" class="form-control" id="lastName" name="lastName"
-                               placeholder="Enter last name...">
+                               placeholder="Enter last name..." required>
+                        <div class="invalid-feedback">
+                            Please enter last name.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="inputLogin">Login</label>
                         <input type="text" class="form-control" id="username" name="username"
-                               placeholder="Enter login...">
+                               placeholder="Enter login..." required>
+                        <div class="invalid-feedback">
+                            Please enter nickname.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="inputEmail">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email"
+                               required>
+                        <div class="invalid-feedback">
+                            Please enter email.
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="inputPassword">Password</label>
                         <input type="password" class="form-control" id="password" name="password"
-                               placeholder="Enter password">
+                               placeholder="Enter password" required>
+                        <div class="invalid-feedback">
+                            Please enter password.
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="inputPasswordCheck">Repeat password</label>
-                        <input type="password" class="form-control" id="password-check" name="password-check"
-                               placeholder="Repeat password">
+                        <input type="password" class="form-control repeat" repeat_field="password" id="password-check" name="password-check"
+                               placeholder="Repeat password" required>
+                        <div class="invalid-feedback">
+                            Passwords are not the same.
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
                 </form>
@@ -64,4 +83,5 @@
     </div>
 </div>
 </body>
+<script type="text/javascript" src="{% static 'forum/js/bootstrap_validation_script.js' %}"></script>
 </html>
