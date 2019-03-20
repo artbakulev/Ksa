@@ -8,7 +8,6 @@ from forum.components import generate_paginator
 from forum.models import Question, Notification, Answer
 
 
-
 def index_view(request, page=1):
     if request.GET.get('popular') is not None:
         sort_key = '-vote_score'
@@ -17,14 +16,25 @@ def index_view(request, page=1):
     else:
         sort_key = '-created'
     questions = Question.objects.order_by(sort_key)
-    # paginator = Paginator(questions, 5) # TODO: Переделай пагинатор
-    questions, first_page, second_page, last_page = generate_paginator(questions, page)
+    paginator = Paginator(questions, 1)  # TODO: Переделай пагинатор
+    page = paginator.page(page)
+
+    first_page = page.number
+    second_page = False
+    last_page = False
+    if page.has_next():
+        second_page = page.number + 1
+
+    if first_page != paginator.num_pages and second_page != paginator.num_pages:
+        last_page = paginator.num_pages
+
+    # questions, first_page, second_page, last_page = generate_paginator(questions, page)
     if request.user.is_authenticated:
         is_authenticated = True
     else:
         is_authenticated = False
     return render(request, 'forum/index.html',
-                  {'questions': questions, 'is_authenticated': is_authenticated, 'first_page': first_page,
+                  {'questions': page, 'is_authenticated': is_authenticated, 'first_page': first_page,
                    'second_page': second_page, 'last_page': last_page})
 
 
@@ -84,7 +94,7 @@ def profile_view(request):
         total_answers += question.total_answers
     notifications = Notification.objects.filter(user=user.id).order_by('-created')
     return render(request, 'forum/profile/profile.html',
-                  {'user': user, 'questions': questions, 'notifications': notifications,
+                  {'user': user, 'is_authenticated': True, 'questions': questions, 'notifications': notifications,
                    'number_of_questions': str(len(questions)),
                    'total_answers': str(total_answers)})
 
@@ -99,7 +109,8 @@ def profile_edit_view(request):
         post = request.POST
         new_login = post.get('login')
         new_email = post.get('email')
-        # TODO: надо что-то решить с аватаркой
+        new_avatar = post.get('avatar')
+
 
         if new_login or new_email:
             notification = Notification.objects.create(user_id=user.id, type='NEW', title='Credentials has changed')
@@ -148,7 +159,7 @@ def question_view(request, question_id):
     question = Question.objects.get(pk=question_id)
     if request.method == 'POST':
         post = request.POST
-        if post.get('question'):  # TODO: Прикрути Ajax когда будешь понимать что читаешь
+        if post.get('question'):
             pass
         elif post.get('answer'):
             pass

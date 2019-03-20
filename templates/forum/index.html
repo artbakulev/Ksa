@@ -107,10 +107,14 @@
                             <li class="page-item"><a class="page-link" href="/{{ second_page }}">{{ second_page }}</a>
                             </li>
                         {% endif %}
-
+                        {% if last_page != False %}
+                        <li class="page-item"><a class="page-link" href="#">...</a>
+                        </li>
+                        {% endif %}
                         {% if last_page > 2 %}
                             <li class="page-item"><a class="page-link" href="/{{ last_page }}">{{ last_page }}</a></li>
                         {% endif %}
+
                         {% if first_page < last_page %}
                             <li class="page-item">
                                 <a class="page-link" href="/{{ second_page }}" aria-label="Next">

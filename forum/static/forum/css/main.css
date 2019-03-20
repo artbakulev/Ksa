@@ -22,6 +22,9 @@
 #pagination {
   justify-content: center; }
 
+.text-grey {
+  color: grey; }
+
 html {
   height: 100%; }
 

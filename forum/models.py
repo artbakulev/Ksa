@@ -6,6 +6,11 @@ from django.db import models
 from vote.models import VoteModel
 
 
+class UserProfile(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    avatar = models.ImageField()
+
+
 class AnswerManager(models.Manager):
     def create_answer(self, user, question, text, vote_score=0):
         answer = self.create(user=user, question=question, text=text, vote_score=vote_score)
