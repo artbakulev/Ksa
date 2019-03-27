@@ -1,0 +1,17 @@
+{% if notification.type == 'ERR' %}"
+    <div class="alert alert-danger" role="alert">
+        {{ notification.text }}<br>
+        <span class="small"> {{ notification.created }}</span>
+    </div>
+{% elif notification.type == 'NEW' %}
+    <div class="alert alert-success" role="alert">
+        {{ notification.text }}<br>
+        <span class="small"> {{ notification.created }}</span>
+    </div>
+{% elif notification.type == 'ADM' %}
+    <div class="alert alert-info" role="alert">
+        {{ notification.text }}<br>
+        <span class="small"> {{ notification.created }}</span>
+
+    </div>
+{% endif %}

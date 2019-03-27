@@ -125,3 +125,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 # Built-in user model
 
 AUTH_PROFILE_MODULE = 'forum.UserProfile'
+
+try:
+    from local_settings import *
+except ImportError:
+    pass

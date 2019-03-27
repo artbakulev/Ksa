@@ -1,108 +1,80 @@
-{% include 'forum/components/navbar.html' %}
+{% extends 'forum/base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
 
-    <meta charset="UTF-8">
-    <title>Profile {{ user }} | KSA</title>
-    <link rel="stylesheet" type="text/css" href="{% static "/forum/css/bootstrap.min.css" %}">
-    <link rel="stylesheet" type="text/css" href="{% static "forum/css/all.min.css" %}">
-    <link rel="stylesheet" type="text/css" href="{% static "/forum/css/main.css" %}">
-</head>
-<body>
-{% block navbar %}
-{% endblock %}
-<div id="main" class="container-fluid">
-    <div class="container-fluid">
-        <div class="row">
-            <div id="main-information" class="col-md-3 order-md-0 col-sm-12 order-sm-1 centered">
-                <div class="card">
-                    <img src="{% static "forum/images/test_user.jpg" %}" width="100%" class="card-img-top" alt="...">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ user.username }}</h5>
-                        <p class="card-text">{{ user.first_name }} {{ user.last_name }}</p>
+{% block title %}Profile {{ user }} | KSA {% endblock %}
+{% block content %}
+    {% include 'forum/components/navbar.html' %}
+    <div id="main" class="container-fluid">
+        <div class="container-fluid">
+            <div class="row">
+                <div id="main-information" class="col-md-3 order-md-0 col-sm-12 order-sm-1 centered">
+                    <div class="card">
+                        <img src="{% static "forum/images/test_user.jpg" %}" width="100%" class="card-img-top"
+                             alt="...">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ user.username }}</h5>
+                            <p class="card-text">{{ user.first_name }} {{ user.last_name }}</p>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><h6>{{ user.email }}</h6></li>
+                            <li class="list-group-item"><h6>my questions <span
+                                    class="badge badge-secondary">{{ number_of_questions }}</span></h6>
+                            </li>
+                            <li class="list-group-item"><h6>my answers <span class="badge badge-secondary">7</span></h6>
+                            </li>
+                        </ul>
+                        <a href="edit/">
+                            <button type="button" class="btn btn-dark btn-block">Edit</button>
+                        </a>
                     </div>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item"><h6>{{ user.email }}</h6></li>
-                        <li class="list-group-item"><h6>my questions <span
-                                class="badge badge-secondary">{{ number_of_questions }}</span></h6>
-                        </li>
-                        <li class="list-group-item"><h6>my answers <span class="badge badge-secondary">7</span></h6>
-                        </li>
-                    </ul>
-                    <a href="edit/">
-                        <button type="button" class="btn btn-dark btn-block">Edit</button>
-                    </a>
                 </div>
-            </div>
-            <div id="questions" class="col-md-6 order-md-1 col-sm-12 order-sm-2">
-                <h3 class="text-center">Your questions</h3>
-                <hr/>
-                {% if not questions %}
-                    <h5 class="text-center text-grey">no new questions</h5>
-                {% else %}
-                    <div class="row">
+                <div id="questions" class="col-md-6 order-md-1 col-sm-12 order-sm-2">
+                    <h3 class="text-center">Your questions</h3>
+                    <hr/>
+                    {% if not questions %}
+                        <h5 class="text-center text-grey">no new questions</h5>
+                    {% else %}
+                        <div class="row">
 
-                        {% for question in questions %}
-                            <div class="col-md-4">
+                            {% for question in questions %}
+                                <div class="col-md-4">
 
-                                <div class="card mt-3">
-                                    <div class="card-body centered">
-                                        <h5 class="card-title">{{ question.title }}</h5>
-                                        <h6 class="card-subtitle mb-2 text-muted">{{ question.created }}</h6>
-                                        <p class="card-text">{{ question.text }}</p>
-                                        <a href="/questions/{{ question.id }}#answers">
-                                            <button type="button" class="btn btn-primary">
-                                                Answers <span
-                                                    class="badge badge-light">{{ question.total_answers }}</span>
-                                                <span class="sr-only">answers</span>
-                                            </button>
-                                        </a>
+                                    <div class="card mt-3">
+                                        <div class="card-body centered">
+                                            <h5 class="card-title">{{ question.title }}</h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">{{ question.created }}</h6>
+                                            <p class="card-text">{{ question.text }}</p>
+                                            <a href="/questions/{{ question.id }}#answers">
+                                                <button type="button" class="btn btn-primary">
+                                                    Answers <span
+                                                        class="badge badge-light">{{ question.total_answers }}</span>
+                                                    <span class="sr-only">answers</span>
+                                                </button>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                </div>
+                <div id="notifications_wall" class="col-md-3 order-md-2 col-sm-12 order-sm-0 centered">
+                    <h3 class="centered">Notifications:</h3>
+                    <hr>
+                    {% if not notifications %}
+                        <h5 class="text-center text-grey">no new notifications</h5>
+                    {% else %}
+                        {% for notification in notifications %}
+                            {% include 'forum/components/notification.html' %}
                         {% endfor %}
-                    </div>
-                {% endif %}
-
-            </div>
-            <div id="notifications_wall" class="col-md-3 order-md-2 col-sm-12 order-sm-0 centered">
-                <h3 class="centered">Notifications:</h3>
-                <hr>
-                {% if not notificationss %}
-                    <h5 class="text-center text-grey">no new notifications</h5>
-                {% else %}
-                    {% for notification in notifications %}
-                        {% if notification.type == 'ERR' %}"
-                            <div class="alert alert-danger" role="alert">
-                                {{ notification.text }}<br>
-                                <span class="small"> {{ notification.created }}</span>
-                            </div>
-                        {% elif notification.type == 'NEW' %}
-                            <div class="alert alert-success" role="alert">
-                                {{ notification.text }}<br>
-                                <span class="small"> {{ notification.created }}</span>
-                            </div>
-                        {% elif notification.type == 'ADM' %}
-                            <div class="alert alert-info" role="alert">
-                                {{ notification.text }}<br>
-                                <span class="small"> {{ notification.created }}</span>
-
-                            </div>
-                        {% endif %}
-
-                    {% endfor %}
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
+
     </div>
 
-</div>
-<footer></footer>
-<script type="text/javascript" src="{% static  "/forum/js/jquery-3.3.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "/forum/js/bootstrap.min.js" %}"></script>
-</body>
-</html>
+{% endblock %}

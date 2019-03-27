@@ -17,7 +17,6 @@ class AnswerManager(models.Manager):
         question = Question.objects.get(pk=question.id)
         question.total_answers += 1
         question.save(update_fields=['total_answers'])
-
         notification = Notification.objects.create(user=question.user, type='NEW', title='New answer',
                                                    text='New answer on question "{}"'.format(question.title))
         notification.save()
@@ -62,8 +61,8 @@ class Notification(models.Model):
         ('ADM', "Tech message")
     )
     type = models.CharField(max_length=3, choices=TYPE_OF_NOTIFICATIONS_CHOICES)
-    title = models.CharField(max_length=30)
-    text = models.CharField(max_length=60)
+    title = models.CharField(max_length=60)
+    text = models.CharField(max_length=150)
     created = models.DateTimeField(default=datetime.datetime.now)
 
     def __str__(self):

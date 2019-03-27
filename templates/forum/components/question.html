@@ -1,0 +1,56 @@
+{% load static %}
+<li class="media mt-5">
+    <img src="{% static "forum/images/test_user.jpg" %}" class="mr-3" alt="test_user">
+    <div class="media-body">
+        <a href="questions/{{ question.id }}"><h5
+                class="mt-0 mb-1">{{ question.title }}</h5></a>
+
+        <p>
+            {{ question.text }}
+        </p>
+        <span class="answers_counter">Answers: {{ question.total_answers }}</span>
+        <span class="ml-5">
+                                    Tags:
+            {% if question.tag1 != 'False' %}
+                <a href="tags/{{ question.tag1 }}"><span
+                        class="badge badge-info">{{ question.tag1 }}</span></a>
+            {% endif %}
+            {% if question.tag2 != 'False' %}
+                <a href="tags/{{ question.tag2 }}"><span
+                        class="badge badge-info">{{ question.tag2 }}</span></a>
+            {% endif %}
+            {% if question.tag3 != 'False' %}
+                <a href="tags/{{ question.tag3 }}"><span
+                        class="badge badge-info">{{ question.tag3 }}</span></a>
+            {% endif %}
+                                </span>
+    </div>
+    <div class="like_menu ml-3">
+        <div class="btn-group-vertical m-auto" role="group">
+            <button type="submit"
+                    data-object="question"
+                    data-action="up-vote"
+                    data-user="{{ user.id }}"
+                    data-id="{{ question.id }}"
+                    class="btn btn-light vote">
+                <i class="fa fa-chevron-up"></i>
+            </button>
+            <button type="button" class="btn btn-light" id="vote{{ question.id }}"
+                    disabled>
+                {% if question.vote_score == -1 %}
+                    0
+                {% else %}
+                    {{ question.vote_score }}
+                {% endif %}
+            </button>
+            <button type="submit"
+                    data-object="question"
+                    data-action="down-vote"
+                    data-user="{{ user.id }}"
+                    data-id="{{ question.id }}"
+                    class="btn btn-light vote">
+                <i class="fa fa-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+</li>

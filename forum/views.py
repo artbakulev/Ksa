@@ -1,17 +1,17 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 
-from forum.components import generate_paginator
 from forum.models import Question, Notification, Answer
 
 
 def index_view(request, page=1):
-    if request.GET.get('popular') is not None:
+    if request.GET.get('popular'):
         sort_key = '-vote_score'
-    elif request.GET.get('answered') is not None:
+    elif request.GET.get('answered'):
         sort_key = '-total_answers'
     else:
         sort_key = '-created'
@@ -28,19 +28,13 @@ def index_view(request, page=1):
     if first_page != paginator.num_pages and second_page != paginator.num_pages:
         last_page = paginator.num_pages
 
-    # questions, first_page, second_page, last_page = generate_paginator(questions, page)
-    if request.user.is_authenticated:
-        is_authenticated = True
-    else:
-        is_authenticated = False
     return render(request, 'forum/index.html',
-                  {'questions': page, 'is_authenticated': is_authenticated, 'first_page': first_page,
+                  {'questions': page, 'first_page': first_page,
                    'second_page': second_page, 'last_page': last_page})
 
 
+@login_required(login_url='/auth')
 def registration_auth_view(request):
-    if request.user.is_authenticated:
-        return redirect('index')
     if request.method == 'POST':
         username = request.POST['username']
         if User.objects.filter(username=username).exists():
@@ -65,9 +59,8 @@ def registration_auth_view(request):
     return render(request, 'forum/registration.html')
 
 
+@login_required(login_url='/auth')
 def auth_view(request):
-    if request.user.is_authenticated:
-        return redirect('index')
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -79,14 +72,14 @@ def auth_view(request):
     return render(request, 'forum/auth.html')
 
 
+@login_required(login_url='/auth')
 def logout_view(request):
     logout(request)
     return redirect('index')
 
 
+@login_required(login_url='/auth/')
 def profile_view(request):
-    if not request.user.is_authenticated:
-        return redirect('auth')
     user = request.user
     questions = Question.objects.filter(user=user.id).order_by('created')
     total_answers = 0
@@ -99,18 +92,14 @@ def profile_view(request):
                    'total_answers': str(total_answers)})
 
 
+@login_required(login_url='/auth')
 def profile_edit_view(request):
     user = request.user
-    if not user.is_authenticated:
-        return redirect('auth')
-
     if request.method == 'POST':
-
         post = request.POST
         new_login = post.get('login')
         new_email = post.get('email')
         new_avatar = post.get('avatar')
-
 
         if new_login or new_email:
             notification = Notification.objects.create(user_id=user.id, type='NEW', title='Credentials has changed')
@@ -137,9 +126,8 @@ def profile_edit_view(request):
     return render(request, 'forum/profile/edit.html')
 
 
+@login_required(login_url='/auth')
 def create_question_view(request):
-    if not request.user.is_authenticated:
-        return redirect('auth')
     if request.method == 'POST':
         title = request.POST['title']
         tags = request.POST['tags'].split()[:3]
@@ -170,31 +158,30 @@ def question_view(request, question_id):
     if question is None:
         return HttpResponse(status=404)
     answers = Answer.objects.filter(question=question).order_by('-created')[:5]
-    if request.user.is_authenticated:
-        is_authenticated = True
-    else:
-        is_authenticated = False
     return render(request, 'forum/question/question.html',
-                  {'question': question, 'answers': answers, 'is_authenticated': is_authenticated})
+                  {'question': question, 'answers': answers, })
 
 
 def vote_view(request):
     post = request.POST
-    user_id = post['user_id']
-    vote_object = post['object']
-    action = post['action']
-    object_id = post['object_id']
-    if vote_object == 'answer':
-        vote_object = Answer.objects.get(pk=object_id)
-        if action == 'up-vote':
-            vote_object.votes.up(user_id)
-        elif action == 'down-vote':
-            vote_object.votes.down(user_id)
+    try:
+        user_id = post['user_id']
+        vote_object = post['object']
+        action = post['action']
+        object_id = post['object_id']
+        if vote_object == 'answer':
+            vote_object = Answer.objects.get(pk=object_id)
+            if action == 'up-vote':
+                vote_object.votes.up(user_id)
+            elif action == 'down-vote':
+                vote_object.votes.down(user_id)
 
-    elif vote_object == 'question':
-        vote_object = Question.objects.get(pk=object_id)
-        if action == 'up-vote':
-            vote_object.votes.up(user_id)
-        elif action == 'down-vote':
-            vote_object.votes.down(user_id)
-    return HttpResponse(vote_object.votes.count(), status=200)
+        elif vote_object == 'question':
+            vote_object = Question.objects.get(pk=object_id)
+            if action == 'up-vote':
+                vote_object.votes.up(user_id)
+            elif action == 'down-vote':
+                vote_object.votes.down(user_id)
+        return HttpResponse(vote_object.votes.count(), status=200)
+    except KeyError:
+        return HttpResponse(status=400)

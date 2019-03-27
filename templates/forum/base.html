@@ -1,0 +1,20 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static "/forum/css/bootstrap.min.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "forum/css/all.min.css" %}">
+    <link rel="stylesheet" type="text/css" href="{% static "/forum/css/main.css" %}">
+    {% block extra_headers %}
+    {% endblock %}
+</head>
+<body>
+{% block content %}
+{% endblock %}
+<script type="text/javascript" src="{% static  "/forum/js/jquery-3.3.1.min.js" %}"></script>
+<script type="text/javascript" src="{% static "/forum/js/bootstrap.min.js" %}"></script>
+</body>
+</html>
