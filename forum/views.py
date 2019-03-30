@@ -33,7 +33,6 @@ def index_view(request, page=1):
                    'second_page': second_page, 'last_page': last_page})
 
 
-@login_required(login_url='/auth')
 def registration_auth_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -59,7 +58,6 @@ def registration_auth_view(request):
     return render(request, 'forum/registration.html')
 
 
-@login_required(login_url='/auth')
 def auth_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -121,7 +119,7 @@ def profile_edit_view(request):
 
             notification.text = notification_text
             notification.save()
-        return redirect('profile')
+        return redirect('/profile')
 
     return render(request, 'forum/profile/edit.html')
 
@@ -162,8 +160,44 @@ def question_view(request, question_id):
                   {'question': question, 'answers': answers, })
 
 
+def tag_view(request, tag_name, page=1):
+    questions = Question.objects.filter(tag1=tag_name).union(Question.objects.filter(tag2=tag_name),
+                                                             Question.objects.filter(
+                                                                 tag3=tag_name))  # TODO: Refactor this
+    paginator = Paginator(questions, 1)  # TODO: Переделай пагинатор
+    page = paginator.page(page)
+    first_page = page.number
+    second_page = False
+    last_page = False
+    if page.has_next():
+        second_page = page.number + 1
+
+    if first_page != paginator.num_pages and second_page != paginator.num_pages:
+        last_page = paginator.num_pages
+
+    return render(request, 'forum/index.html',
+                  {'questions': page, 'first_page': first_page,
+                   'second_page': second_page, 'last_page': last_page})
+
+
+def user_view(request, user_name):
+    try:
+        user = User.objects.get(username=user_name)
+        questions = Question.objects.filter(user=user.id).order_by('created')
+        total_answers = 0
+        for question in questions:
+            total_answers += question.total_answers
+        return render(request, 'forum/profile/user_profile.html',
+                      {'user': user, 'questions': questions,
+                       'number_of_questions': str(len(questions)),
+                       'total_answers': str(total_answers)})
+    except User.DoesNotExist:
+        return HttpResponse(status=404)
+
 def vote_view(request):
     post = request.POST
+    if post.get('user_id', True):
+        return HttpResponse(status=403)
     try:
         user_id = post['user_id']
         vote_object = post['object']

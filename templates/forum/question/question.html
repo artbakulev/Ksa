@@ -40,5 +40,7 @@
         </div>
     </div>
     {% csrf_token %}
+{% endblock %}
+{% block extra_scripts %}
     <script type="text/javascript" src="{% static "forum/js/ajax_main.js" %}"></script>
 {% endblock %}

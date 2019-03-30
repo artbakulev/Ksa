@@ -2,7 +2,7 @@
 {% load static %}
 
 
-{% block title %}Profile {{ user.username }} | KSA {% endblock %}
+{% block title %}Profile {{ user }} | KSA {% endblock %}
 {% block content %}
     {% include 'forum/components/navbar.html' %}
     <div id="main" class="container-fluid">
@@ -24,13 +24,10 @@
                             <li class="list-group-item"><h6>my answers <span class="badge badge-secondary">7</span></h6>
                             </li>
                         </ul>
-                        <a href="edit/">
-                            <button type="button" class="btn btn-dark btn-block">Edit</button>
-                        </a>
                     </div>
                 </div>
-                <div id="questions" class="col-md-6 order-md-1 col-sm-12 order-sm-2">
-                    <h3 class="text-center">Your questions</h3>
+                <div id="questions" class="col-md-9 order-md-1 col-sm-12 order-sm-2">
+                    <h3 class="text-center">{{ user.username }}'s questions</h3>
                     <hr/>
                     {% if not questions %}
                         <h5 class="text-center text-grey">no questions</h5>
@@ -60,17 +57,6 @@
                         </div>
                     {% endif %}
 
-                </div>
-                <div id="notifications_wall" class="col-md-3 order-md-2 col-sm-12 order-sm-0 centered">
-                    <h3 class="centered">Notifications:</h3>
-                    <hr>
-                    {% if not notifications %}
-                        <h5 class="text-center text-grey">no new notifications</h5>
-                    {% else %}
-                        {% for notification in notifications %}
-                            {% include 'forum/components/notification.html' %}
-                        {% endfor %}
-                    {% endif %}
                 </div>
             </div>
         </div>
