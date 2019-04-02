@@ -43,4 +43,7 @@
 {% endblock %}
 {% block extra_scripts %}
     <script type="text/javascript" src="{% static "forum/js/ajax_main.js" %}"></script>
+    {% if not user.is_authenticated %}
+        <script type="text/javascript" src="{% static "/forum/js/denyVote.js" %}"></script>
+    {% endif %}
 {% endblock %}

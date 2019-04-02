@@ -1,11 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 
-from forum.models import Question, Notification, Answer
+from forum.models import Question, Notification, Answer, Tag
+from forum.scripts.paginator import make_paginator
 
 
 def index_view(request, page=1):
@@ -16,21 +16,12 @@ def index_view(request, page=1):
     else:
         sort_key = '-created'
     questions = Question.objects.order_by(sort_key)
-    paginator = Paginator(questions, 1)  # TODO: Переделай пагинатор
-    page = paginator.page(page)
+    context = make_paginator(questions, page, 6)
+    context['questions'] = context['page']
+    context.pop('page')
+    context['tags'] = Tag.objects.order_by('-total')[:5]
 
-    first_page = page.number
-    second_page = False
-    last_page = False
-    if page.has_next():
-        second_page = page.number + 1
-
-    if first_page != paginator.num_pages and second_page != paginator.num_pages:
-        last_page = paginator.num_pages
-
-    return render(request, 'forum/index.html',
-                  {'questions': page, 'first_page': first_page,
-                   'second_page': second_page, 'last_page': last_page})
+    return render(request, 'forum/index.html', context=context)
 
 
 def registration_auth_view(request):
@@ -128,12 +119,9 @@ def profile_edit_view(request):
 def create_question_view(request):
     if request.method == 'POST':
         title = request.POST['title']
-        tags = request.POST['tags'].split()[:3]
-        while len(tags) < 3:
-            tags.append(False)
+        tags = request.POST['tags'].split()
         text = request.POST['text']
-        question = Question.objects.create(user=request.user, title=title, tag1=tags[0], tag2=tags[1], tag3=tags[2],
-                                           text=text)
+        question = Question.objects.create_question(user=request.user, title=title, tags=tags, text=text)
         if question is not None:
             question.save()
             return redirect('../questions/{}'.format(question.id))
@@ -145,11 +133,8 @@ def question_view(request, question_id):
     question = Question.objects.get(pk=question_id)
     if request.method == 'POST':
         post = request.POST
-        if post.get('question'):
-            pass
-        elif post.get('answer'):
-            pass
-        elif post.get('new_answer'):
+
+        if post.get('new_answer'):
             answer = Answer.objects.create_answer(user=request.user, question=question, text=post['new_answer'])
             answer.save()
             return redirect('.')
@@ -164,20 +149,11 @@ def tag_view(request, tag_name, page=1):
     questions = Question.objects.filter(tag1=tag_name).union(Question.objects.filter(tag2=tag_name),
                                                              Question.objects.filter(
                                                                  tag3=tag_name))  # TODO: Refactor this
-    paginator = Paginator(questions, 1)  # TODO: Переделай пагинатор
-    page = paginator.page(page)
-    first_page = page.number
-    second_page = False
-    last_page = False
-    if page.has_next():
-        second_page = page.number + 1
-
-    if first_page != paginator.num_pages and second_page != paginator.num_pages:
-        last_page = paginator.num_pages
-
-    return render(request, 'forum/index.html',
-                  {'questions': page, 'first_page': first_page,
-                   'second_page': second_page, 'last_page': last_page})
+    context = make_paginator(questions, page, 6)
+    context['questions'] = context['page']
+    context.pop('page')
+    context['tags'] = Tag.objects.order_by('-total')[:5]
+    return render(request, 'forum/index.html', context=context)
 
 
 def user_view(request, user_name):
@@ -194,12 +170,14 @@ def user_view(request, user_name):
     except User.DoesNotExist:
         return HttpResponse(status=404)
 
+
 def vote_view(request):
     post = request.POST
-    if post.get('user_id', True):
+    user = request.user
+    if not user.is_authenticated:
         return HttpResponse(status=403)
     try:
-        user_id = post['user_id']
+        user_id = user.id
         vote_object = post['object']
         action = post['action']
         object_id = post['object_id']

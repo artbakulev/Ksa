@@ -11,6 +11,19 @@ class UserProfile(models.Model):
     avatar = models.ImageField()
 
 
+class QuestionManager(models.Manager):
+    def create_question(self, **kwargs):
+        user_id = kwargs['user']
+        title = kwargs['title']
+        text = kwargs['text']
+        tags = TagManager.format_tags(kwargs['tags'])
+        question = self.create(user=user_id, title=title, text=text, tag1=tags[0], tag2=tags[1], tag3=tags[2])
+        question.save()
+        for tag in tags:
+            Tag.objects.create_or_update_tag(tag)
+        return question
+
+
 class AnswerManager(models.Manager):
     def create_answer(self, user, question, text, vote_score=0):
         answer = self.create(user=user, question=question, text=text, vote_score=vote_score)
@@ -24,7 +37,28 @@ class AnswerManager(models.Manager):
         return answer
 
 
+class TagManager(models.Manager):
+    @staticmethod
+    def format_tags(tags):
+        tags = tags[:3]
+        while len(tags) < 3:
+            tags.append(False)
+        return tags
+
+    def create_or_update_tag(self, tag):
+        try:
+            tag = self.get(text=tag)
+            tag.total += 1
+            tag.save(update_fields=['total'])
+        except Tag.DoesNotExist:
+            tag = self.create(text=tag, total=1)
+            tag.save()
+        return tag
+
+
 class Question(VoteModel, models.Model):
+    objects = QuestionManager()
+
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User,
                              models.CASCADE)  # TODO: Переделай чтобы не удалялись все вопросы при удаление пользователя
@@ -67,3 +101,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Tag(models.Model):
+    objects = TagManager()
+
+    id = models.AutoField(primary_key=True)
+    text = models.CharField(max_length=15)
+    total = models.IntegerField(default=1)
+
+    def __str__(self):
+        return self.text
