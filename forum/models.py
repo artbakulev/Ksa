@@ -2,13 +2,30 @@ import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from vote.models import VoteModel
 
 
-class UserProfile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    avatar = models.ImageField()
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(max_length=500, blank=True)
+    location = models.CharField(max_length=30, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class QuestionManager(models.Manager):
@@ -61,7 +78,7 @@ class Question(VoteModel, models.Model):
 
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User,
-                             models.CASCADE)  # TODO: Переделай чтобы не удалялись все вопросы при удаление пользователя
+                             models.SET(13))
     title = models.CharField(max_length=50)
     created = models.DateTimeField(default=datetime.datetime.now)
     text = models.CharField(max_length=500)
@@ -76,7 +93,7 @@ class Question(VoteModel, models.Model):
 
 class Answer(VoteModel, models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.CASCADE)
+    user = models.ForeignKey(User, models.SET(13))
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=500)
     objects = AnswerManager()
@@ -88,7 +105,7 @@ class Answer(VoteModel, models.Model):
 
 class Notification(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.CASCADE)
+    user = models.ForeignKey(User, models.SET(13))
     TYPE_OF_NOTIFICATIONS_CHOICES = (
         ('ERR', 'Error'),
         ('NEW', "New event"),

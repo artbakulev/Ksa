@@ -9,9 +9,9 @@ from forum.scripts.paginator import make_paginator
 
 
 def index_view(request, page=1):
-    if request.GET.get('popular'):
+    if request.GET.get('popular') is not None:
         sort_key = '-vote_score'
-    elif request.GET.get('answered'):
+    elif request.GET.get('answered') is not None:
         sort_key = '-total_answers'
     else:
         sort_key = '-created'
@@ -24,7 +24,7 @@ def index_view(request, page=1):
     return render(request, 'forum/index.html', context=context)
 
 
-def registration_auth_view(request):
+def registration_view(request):
     if request.method == 'POST':
         username = request.POST['username']
         if User.objects.filter(username=username).exists():
