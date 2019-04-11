@@ -1,5 +1,7 @@
-from django.urls import path
+from django.urls import path, re_path
+from django.views.static import serve
 
+from Ksa import settings
 from forum.views import index_view, registration_view, profile_view, auth_view, logout_view, create_question_view, \
     question_view, profile_edit_view, vote_view, tag_view, user_view
 
@@ -17,3 +19,11 @@ urlpatterns = [
     path('<int:page>', index_view, name='index_page'),
     path('', index_view, name='index'),
 ]
+
+# TODO: get rid of this stuff
+if settings.DEBUG:
+    urlpatterns.append(
+        re_path(r'^media/(?P<path>.*)$', serve, {
+            'document_root': settings.MEDIA_ROOT,
+        }),
+    )

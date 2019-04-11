@@ -7,11 +7,57 @@ from django.dispatch import receiver
 from vote.models import VoteModel
 
 
+class ProfileManager(models.Manager):
+
+    # TODO: Сделай отправку сообщений и порефакторь это
+    @staticmethod
+    def update_profile_and_user(user, cleaned_data):
+        user_fields_to_update, profile_fields_to_update = [], []
+        profile = Profile.objects.get(user=user.id)
+        user = User.objects.get(pk=user.id)
+        username = cleaned_data.get('login', False)
+        first_name = cleaned_data.get('first_name', False)
+        last_name = cleaned_data.get('last_name', False)
+        email = cleaned_data.get('email', False)
+        bio = cleaned_data.get('bio', False)
+        avatar = cleaned_data.get('avatar', False)
+        if username:
+            user_fields_to_update.append('username')
+            user.username = username
+        if first_name:
+            user_fields_to_update.append('first_name')
+            user.first_name = first_name
+        if last_name:
+            user_fields_to_update.append('last_name')
+            user.last_name = last_name
+        if email:
+            user_fields_to_update.append('email')
+            user.email = email
+        if bio:
+            profile_fields_to_update.append('bio')
+            profile.bio = bio
+        if avatar:
+            profile_fields_to_update.append('avatar')
+            profile.avatar = avatar
+
+        if user_fields_to_update:
+            user.save(update_fields=user_fields_to_update)
+        if profile_fields_to_update:
+            profile.save(update_fields=profile_fields_to_update)
+        return user, profile
+
+
+def user_directory_path(instance, filename):
+    return 'avatars/{0}_{1}'.format(instance.user.id, filename)
+
+
 class Profile(models.Model):
+    objects = ProfileManager()
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    avatar = models.ImageField(upload_to=user_directory_path, null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -34,10 +80,11 @@ class QuestionManager(models.Manager):
         title = kwargs['title']
         text = kwargs['text']
         tags = TagManager.format_tags(kwargs['tags'])
-        question = self.create(user=user_id, title=title, text=text, tag1=tags[0], tag2=tags[1], tag3=tags[2])
+        question = self.create(user=user_id, title=title, text=text)
         question.save()
         for tag in tags:
-            Tag.objects.create_or_update_tag(tag)
+            current_tag = Tag.objects.create_or_update_tag(tag)
+            question.tags.add(current_tag)
         return question
 
 
@@ -73,6 +120,16 @@ class TagManager(models.Manager):
         return tag
 
 
+class Tag(models.Model):
+    objects = TagManager()
+    id = models.AutoField(primary_key=True)
+    text = models.CharField(max_length=15)
+    total = models.IntegerField(default=1)
+
+    def __str__(self):
+        return self.text
+
+
 class Question(VoteModel, models.Model):
     objects = QuestionManager()
 
@@ -82,9 +139,7 @@ class Question(VoteModel, models.Model):
     title = models.CharField(max_length=50)
     created = models.DateTimeField(default=datetime.datetime.now)
     text = models.CharField(max_length=500)
-    tag1 = models.CharField(max_length=15, default='')
-    tag2 = models.CharField(max_length=15, default='')
-    tag3 = models.CharField(max_length=15, default='')
+    tags = models.ManyToManyField(Tag)
     total_answers = models.IntegerField(default=0)
 
     def __str__(self):
@@ -118,14 +173,3 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
-
-
-class Tag(models.Model):
-    objects = TagManager()
-
-    id = models.AutoField(primary_key=True)
-    text = models.CharField(max_length=15)
-    total = models.IntegerField(default=1)
-
-    def __str__(self):
-        return self.text

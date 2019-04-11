@@ -1,33 +1,24 @@
 {% load static %}
+
 <li class="media mt-5">
     <img src="{% static "forum/images/test_user.jpg" %}" class="mr-3" alt="test_user">
     <div class="media-body">
         <a href="/questions/{{ question.id }}"><h5
                 class="mt-0 mb-1">{{ question.title }}</h5></a>
-
         <p>
             {{ question.text }}
-
         </p>
-        <p>Created by <a href="/users/{{ question.user }}">{{ question.user }}</a>
-        </p>
+        <p>Created by <a href="/users/{{ question.user }}">{{ question.user }}</a></p>
 
         <span class="answers_counter">Answers: {{ question.total_answers }}</span>
         <span class="ml-5">
-                                    Tags:
-            {% if question.tag1 != 'False' %}
-                <a href="/tags/{{ question.tag1 }}/1"><span
-                        class="badge badge-info">{{ question.tag1 }}</span></a>
-            {% endif %}
-            {% if question.tag2 != 'False' %}
-                <a href="/tags/{{ question.tag2 }}/1"><span
-                        class="badge badge-info">{{ question.tag2 }}</span></a>
-            {% endif %}
-            {% if question.tag3 != 'False' %}
-                <a href="/tags/{{ question.tag3 }}/1"><span
-                        class="badge badge-info">{{ question.tag3 }}</span></a>
-            {% endif %}
-                                </span>
+            Tags:
+            {% for tag in question.tags.all %}
+                <a href="/tags/{{ tag }}/1">
+                    <span class="badge badge-info">{{ tag }}</span></a>
+
+            {% endfor %}
+        </span>
     </div>
     <div class="like_menu ml-3">
         <div class="btn-group-vertical m-auto" role="group">

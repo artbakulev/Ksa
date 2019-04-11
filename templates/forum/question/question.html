@@ -1,5 +1,6 @@
 {% extends 'forum/base.html' %}
 {% load static %}}
+{% load crispy_forms_tags %}
 
 
 {% block title %}{{ question.title }} | KSA{% endblock %}
@@ -14,14 +15,12 @@
             </div>
             {% include 'forum/components/question.html' %}
             {% if user.is_authenticated %}
-                <form method="post">{% csrf_token %}
+                <form method="post" class="mt-5">
+                    {% csrf_token %}
                     <div class="alert alert-info">
                         <div class="media">
                             <div class="media-body text-center">
-                                <h5><label
-                                        for="new_answer">Your
-                                    answer:</label></h5>
-                                <textarea class="form-control" id="new_answer" name="new_answer" rows="3"></textarea>
+                                {{ form|crispy }}
                                 <button type="submit" class="btn btn-success btn-lg mt-2">Send</button>
                             </div>
                         </div>

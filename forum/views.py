@@ -1,11 +1,16 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
 
-from forum.models import Question, Notification, Answer, Tag
+from forum.forms import AnswerForm, EditProfileForm
+from forum.models import Question, Notification, Answer, Tag, Profile
 from forum.scripts.paginator import make_paginator
+
+
+# TODO: Почитай ClassBasedViews
+# TODO: CrispyForms - рендер форм под фреймворки
 
 
 def index_view(request, page=1):
@@ -15,8 +20,13 @@ def index_view(request, page=1):
         sort_key = '-total_answers'
     else:
         sort_key = '-created'
+
     questions = Question.objects.order_by(sort_key)
     context = make_paginator(questions, page, 6)
+
+    if context.get('error') is not None:
+        raise context['error']
+
     context['questions'] = context['page']
     context.pop('page')
     context['tags'] = Tag.objects.order_by('-total')[:5]
@@ -70,49 +80,34 @@ def logout_view(request):
 @login_required(login_url='/auth/')
 def profile_view(request):
     user = request.user
+    profile = Profile.objects.get(user=user.id)
     questions = Question.objects.filter(user=user.id).order_by('created')
     total_answers = 0
     for question in questions:
         total_answers += question.total_answers
     notifications = Notification.objects.filter(user=user.id).order_by('-created')
     return render(request, 'forum/profile/profile.html',
-                  {'user': user, 'is_authenticated': True, 'questions': questions, 'notifications': notifications,
+                  {'user': user, 'profile': profile, 'is_authenticated': True, 'questions': questions,
+                   'notifications': notifications,
                    'number_of_questions': str(len(questions)),
                    'total_answers': str(total_answers)})
 
 
 @login_required(login_url='/auth')
 def profile_edit_view(request):
-    user = request.user
+    context = {}
     if request.method == 'POST':
-        post = request.POST
-        new_login = post.get('login')
-        new_email = post.get('email')
-        new_avatar = post.get('avatar')
+        form = EditProfileForm(request.POST, request.FILES)
+        if not form.is_valid():
+            context.update({'error': 'Something wrond with data', 'form': EditProfileForm()})
+            return render(request, 'forum/profile/edit.html', context=context)
 
-        if new_login or new_email:
-            notification = Notification.objects.create(user_id=user.id, type='NEW', title='Credentials has changed')
-            notification_text = 'You change your %s recently'
-            user_to_update = User.objects.get(pk=user.id)
-            if new_login and not new_email:
-                user_to_update.username = new_login
-                notification_text = notification_text % 'email'
-                user_to_update.save(update_fields=['username'])
-            elif new_email and not new_login:
-                user_to_update.email = new_email
-                notification_text = notification_text % 'login'
-                user_to_update.save(update_fields=['email'])
-            else:
-                user_to_update.username = new_login
-                user_to_update.email = new_email
-                notification_text = notification_text % 'login and email'
-                user_to_update.save(update_fields=['username', 'email'])
-
-            notification.text = notification_text
-            notification.save()
+        user = request.user
+        Profile.objects.update_profile_and_user(user, form.cleaned_data)
         return redirect('/profile')
-
-    return render(request, 'forum/profile/edit.html')
+    form = EditProfileForm()
+    context.update({'form': form})
+    return render(request, 'forum/profile/edit.html', context=context)
 
 
 @login_required(login_url='/auth')
@@ -131,24 +126,29 @@ def create_question_view(request):
 
 def question_view(request, question_id):
     question = Question.objects.get(pk=question_id)
-    if request.method == 'POST':
-        post = request.POST
+    context = {}
 
-        if post.get('new_answer'):
-            answer = Answer.objects.create_answer(user=request.user, question=question, text=post['new_answer'])
+    if request.method == 'POST':
+        form = AnswerForm(request.POST)
+        if form.is_valid():
+            answer = Answer.objects.create_answer(user=request.user, question=question, text=form.cleaned_data['text'])
             answer.save()
             return redirect('.')
+        else:
+            context.update({'error': "Invalid answer's data"})
+
     if question is None:
-        return HttpResponse(status=404)
-    answers = Answer.objects.filter(question=question).order_by('-created')[:5]
-    return render(request, 'forum/question/question.html',
-                  {'question': question, 'answers': answers, })
+        raise Http404
+
+    answers = Answer.objects.filter(question=question).order_by('created')
+    form = AnswerForm()
+    context.update({'form': form, 'question': question, 'answers': answers})
+
+    return render(request, 'forum/question/question.html', context=context)
 
 
 def tag_view(request, tag_name, page=1):
-    questions = Question.objects.filter(tag1=tag_name).union(Question.objects.filter(tag2=tag_name),
-                                                             Question.objects.filter(
-                                                                 tag3=tag_name))  # TODO: Refactor this
+    questions = Question.objects.filter(tags__text=tag_name)
     context = make_paginator(questions, page, 6)
     context['questions'] = context['page']
     context.pop('page')

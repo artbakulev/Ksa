@@ -1,9 +1,13 @@
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage
+from django.http import Http404
 
 
 def make_paginator(objects, page, max_objects_per_page):
     paginator = Paginator(objects, max_objects_per_page)
-    page = paginator.page(page)
+    try:
+        page = paginator.page(page)
+    except EmptyPage:
+        return {'error': Http404}
     first_page = page.number
     second_page = False
     last_page = False
