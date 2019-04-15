@@ -1,7 +1,7 @@
 {% load static %}
 {% block answer %}
     <li class="media mt-5 alert alert-dark">
-        <img src="{% static "forum/images/test_user.jpg" %}" class="mr-3" alt="test_user">
+        <img src="{% static "forum/images/../../../media/avatars/default_user.jpg" %}" class="mr-3" alt="test_user">
         <div class="media-body">
             <a href="/users/{{ answer.user }}"><h5 class="mt-0 mb-1">{{ answer.user }}</h5></a>
             <hr>
@@ -21,10 +21,10 @@
                 </button>
                 <button type="button" class="btn btn-light" id="vote{{ answer.id }}"
                         disabled>
-                    {% if answer.vote_score == -1 %}
+                    {% if answer.total_likes == -1 %}
                         0
                     {% else %}
-                        {{ answer.vote_score }}
+                        {{ answer.total_likes }}
                     {% endif %}
                 </button>
                 <button type="submit"

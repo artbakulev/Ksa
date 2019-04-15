@@ -7,9 +7,37 @@ from django.dispatch import receiver
 from vote.models import VoteModel
 
 
+def user_directory_path(instance, filename):
+    return 'user{0}/{1}'.format(instance.user.id, filename)
+
+
+class LikeManager(models.Manager):
+    def create_like(self, user, obj, action='up-vote'):
+        try:
+            like = self.get(user=user)
+            if like.is_active and action == 'down-vote':
+                like.is_active = False
+                obj.total_likes -= 1
+            elif not like.is_active and action == 'up-vote':
+                like.is_active = True
+                obj.total_likes += 1
+            like.save(update_fields=['is_active'])
+        except Like.DoesNotExist:
+            like = self.create(user=user)
+            if action == 'like':
+                obj.total_likes += 1
+            else:
+                like.is_active = False
+            like.save()
+            obj.likes.add(like)
+
+        obj.save(update_fields=['total_likes'])
+        return like
+
+
 class ProfileManager(models.Manager):
 
-    # TODO: Сделай отправку сообщений и порефакторь это
+    # TODO: Порефакторь это
     @staticmethod
     def update_profile_and_user(user, cleaned_data):
         user_fields_to_update, profile_fields_to_update = [], []
@@ -44,34 +72,13 @@ class ProfileManager(models.Manager):
             user.save(update_fields=user_fields_to_update)
         if profile_fields_to_update:
             profile.save(update_fields=profile_fields_to_update)
+        user_fields_to_update.extend(profile_fields_to_update)
+        if user_fields_to_update:
+            notification = Notification.objects.create(user=user, type='NEW', title='Profile updated',
+                                                       text='You have updated {}.'.format(
+                                                           (', '.join(user_fields_to_update)).replace('_', ' ')))
+            notification.save()
         return user, profile
-
-
-def user_directory_path(instance, filename):
-    return 'avatars/{0}_{1}'.format(instance.user.id, filename)
-
-
-class Profile(models.Model):
-    objects = ProfileManager()
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bio = models.TextField(max_length=500, blank=True)
-    location = models.CharField(max_length=30, blank=True)
-    birth_date = models.DateField(null=True, blank=True)
-    avatar = models.ImageField(upload_to=user_directory_path, null=True, blank=True)
-
-    def __str__(self):
-        return self.user.username
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
 
 
 class QuestionManager(models.Manager):
@@ -120,6 +127,29 @@ class TagManager(models.Manager):
         return tag
 
 
+class Profile(models.Model):
+    objects = ProfileManager()
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(max_length=500, blank=True)
+    location = models.CharField(max_length=30, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    avatar = models.ImageField(upload_to=user_directory_path, default='/avatars/default_user.jpg')
+
+    def __str__(self):
+        return self.user.username
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+
 class Tag(models.Model):
     objects = TagManager()
     id = models.AutoField(primary_key=True)
@@ -130,7 +160,17 @@ class Tag(models.Model):
         return self.text
 
 
-class Question(VoteModel, models.Model):
+class Like(models.Model):
+    objects = LikeManager()
+    id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, models.SET(13))
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.user.username
+
+
+class Question(models.Model):
     objects = QuestionManager()
 
     id = models.AutoField(primary_key=True)
@@ -141,18 +181,22 @@ class Question(VoteModel, models.Model):
     text = models.CharField(max_length=500)
     tags = models.ManyToManyField(Tag)
     total_answers = models.IntegerField(default=0)
+    likes = models.ManyToManyField(Like)
+    total_likes = models.IntegerField(default=0)
 
     def __str__(self):
         return self.title
 
 
-class Answer(VoteModel, models.Model):
+class Answer(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, models.SET(13))
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=500)
     objects = AnswerManager()
     created = models.DateTimeField(default=datetime.datetime.now)
+    likes = models.ManyToManyField(Like)
+    total_likes = models.IntegerField(default=0)
 
     def __str__(self):
         return self.question.title

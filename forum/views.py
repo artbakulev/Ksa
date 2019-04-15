@@ -5,12 +5,8 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
 
 from forum.forms import AnswerForm, EditProfileForm
-from forum.models import Question, Notification, Answer, Tag, Profile
+from forum.models import Question, Notification, Answer, Tag, Profile, Like
 from forum.scripts.paginator import make_paginator
-
-
-# TODO: Почитай ClassBasedViews
-# TODO: CrispyForms - рендер форм под фреймворки
 
 
 def index_view(request, page=1):
@@ -80,14 +76,13 @@ def logout_view(request):
 @login_required(login_url='/auth/')
 def profile_view(request):
     user = request.user
-    profile = Profile.objects.get(user=user.id)
     questions = Question.objects.filter(user=user.id).order_by('created')
     total_answers = 0
     for question in questions:
         total_answers += question.total_answers
     notifications = Notification.objects.filter(user=user.id).order_by('-created')
     return render(request, 'forum/profile/profile.html',
-                  {'user': user, 'profile': profile, 'is_authenticated': True, 'questions': questions,
+                  {'questions': questions,
                    'notifications': notifications,
                    'number_of_questions': str(len(questions)),
                    'total_answers': str(total_answers)})
@@ -171,29 +166,17 @@ def user_view(request, user_name):
         return HttpResponse(status=404)
 
 
+@login_required()
 def vote_view(request):
     post = request.POST
     user = request.user
-    if not user.is_authenticated:
-        return HttpResponse(status=403)
     try:
-        user_id = user.id
-        vote_object = post['object']
-        action = post['action']
-        object_id = post['object_id']
+        vote_object, action, object_id = post['object'], post['action'], post['object_id']
         if vote_object == 'answer':
             vote_object = Answer.objects.get(pk=object_id)
-            if action == 'up-vote':
-                vote_object.votes.up(user_id)
-            elif action == 'down-vote':
-                vote_object.votes.down(user_id)
-
         elif vote_object == 'question':
             vote_object = Question.objects.get(pk=object_id)
-            if action == 'up-vote':
-                vote_object.votes.up(user_id)
-            elif action == 'down-vote':
-                vote_object.votes.down(user_id)
-        return HttpResponse(vote_object.votes.count(), status=200)
+        Like.objects.create_like(user, vote_object, action)
+        return HttpResponse(vote_object.total_likes, status=200)
     except KeyError:
         return HttpResponse(status=400)
