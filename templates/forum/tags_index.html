@@ -8,15 +8,9 @@
             <div class="row">
                 <div id="question_wall" class="col-md-7 order-md-0 col-sm-12 order-sm-1">
                     <div id="title" class="mt-sm-5 mt-md-0">
-                        <h1>New Questions</h1>
+                        <h1>New Questions on <strong>{{ tag }}</strong></h1>
                         <hr>
                     </div>
-                        <nav class="nav nav-pills nav-justified" id="sorts">
-                            <a class="nav-item nav-link" name="newest" href="/">Newest</a>
-                            <a class="nav-item nav-link" name="popular" href="?popular">Most popular</a>
-                            <a class="nav-item nav-link" name="answered" href="?answered">Most answered</a>
-                        </nav>
-                        <hr>
                     <div id="question_blocks">
                         <ul class="list-unstyled">
                             {% for question in questions %}

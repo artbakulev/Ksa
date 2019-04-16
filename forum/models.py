@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from vote.models import VoteModel
 
 
 def user_directory_path(instance, filename):
@@ -96,8 +95,8 @@ class QuestionManager(models.Manager):
 
 
 class AnswerManager(models.Manager):
-    def create_answer(self, user, question, text, vote_score=0):
-        answer = self.create(user=user, question=question, text=text, vote_score=vote_score)
+    def create_answer(self, user, question, text, total_likes=0):
+        answer = self.create(user=user, question=question, text=text, total_likes=total_likes)
         question = Question.objects.get(pk=question.id)
         question.total_answers += 1
         question.save(update_fields=['total_answers'])
@@ -153,7 +152,7 @@ def save_user_profile(sender, instance, **kwargs):
 class Tag(models.Model):
     objects = TagManager()
     id = models.AutoField(primary_key=True)
-    text = models.CharField(max_length=15)
+    text = models.CharField(max_length=15, unique=True)
     total = models.IntegerField(default=1)
 
     def __str__(self):
@@ -163,7 +162,7 @@ class Tag(models.Model):
 class Like(models.Model):
     objects = LikeManager()
     id = models.AutoField(primary_key=True)
-    user = models.OneToOneField(User, models.SET(13))
+    user = models.ForeignKey(User, models.SET(13))
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -189,11 +188,11 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
+    objects = AnswerManager()
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, models.SET(13))
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=500)
-    objects = AnswerManager()
     created = models.DateTimeField(default=datetime.datetime.now)
     likes = models.ManyToManyField(Like)
     total_likes = models.IntegerField(default=0)

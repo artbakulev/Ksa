@@ -11,7 +11,7 @@ from forum.scripts.paginator import make_paginator
 
 def index_view(request, page=1):
     if request.GET.get('popular') is not None:
-        sort_key = '-vote_score'
+        sort_key = '-total_likes'
     elif request.GET.get('answered') is not None:
         sort_key = '-total_answers'
     else:
@@ -143,12 +143,13 @@ def question_view(request, question_id):
 
 
 def tag_view(request, tag_name, page=1):
-    questions = Question.objects.filter(tags__text=tag_name)
-    context = make_paginator(questions, page, 6)
+    questions = Question.objects.filter(tags__text=tag_name).order_by('-created')
+    context = make_paginator(questions, page, 6, '/tags/' + tag_name)
     context['questions'] = context['page']
     context.pop('page')
     context['tags'] = Tag.objects.order_by('-total')[:5]
-    return render(request, 'forum/index.html', context=context)
+    context['tag'] = tag_name
+    return render(request, 'forum/tags_index.html', context=context)
 
 
 def user_view(request, user_name):

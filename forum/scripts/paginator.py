@@ -2,7 +2,7 @@ from django.core.paginator import Paginator, EmptyPage
 from django.http import Http404
 
 
-def make_paginator(objects, page, max_objects_per_page):
+def make_paginator(objects, page, max_objects_per_page, prefix=''):
     paginator = Paginator(objects, max_objects_per_page)
     try:
         page = paginator.page(page)
@@ -16,5 +16,6 @@ def make_paginator(objects, page, max_objects_per_page):
     if first_page != paginator.num_pages and second_page != paginator.num_pages:
         last_page = paginator.num_pages
 
-    paginator = {'page': page, 'first_page': first_page, 'second_page': second_page, 'last_page': last_page}
+    paginator = {'page': page, 'first_page': first_page, 'second_page': second_page, 'last_page': last_page,
+                 'prefix': prefix}
     return paginator
