@@ -17,11 +17,11 @@
             {% if user.is_authenticated %}
                 <form method="post" class="mt-5">
                     {% csrf_token %}
-                    <div class="alert alert-info">
+                    <div class="alert alert-dark">
                         <div class="media">
                             <div class="media-body text-center">
                                 {{ form|crispy }}
-                                <button type="submit" class="btn btn-success btn-lg mt-2">Send</button>
+                                <button type="submit" class="btn btn-success btn-lg btn-block mt-2">Send</button>
                             </div>
                         </div>
                     </div>

@@ -34,6 +34,8 @@
                     disabled>
                 {% if question.total_likes == -1 %}
                     0
+                    {#                {% elif question.total_likes > 1000 %}#}
+                    {#                    {{ question.total_likes|truncatechars:2 }}K#}
                 {% else %}
                     {{ question.total_likes }}
                 {% endif %}
