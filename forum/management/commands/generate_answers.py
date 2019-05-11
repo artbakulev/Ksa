@@ -40,7 +40,6 @@ class Command(BaseCommand):
         while i < total_questions:
             users = get_random(User, OBJECTS_NUMBER + 1)
             questions = get_random(Question, OBJECTS_NUMBER + 1)
-            likes = get_random(Like, 2 * OBJECTS_NUMBER + 1)
             for j in range(ANSWERS_PER_ONE_GENERATION):
                 logger.info('Generate {} / {} answer.'.format(i + 1, options['answers']))
                 question = questions[randint(0, OBJECTS_NUMBER)]
@@ -52,7 +51,12 @@ class Command(BaseCommand):
                                                       text=fake.text(max_nb_chars=450, ext_word_list=None),
                                                       total_likes=total_likes)
                 answer.save()
-                for q in range(total_likes):
-                    answer.likes.add(likes[randint(0, 2 * OBJECTS_NUMBER)])
+
+                for i in range(total_likes):
+                    like = Like.objects.create_like(user=users[randint(0, OBJECTS_NUMBER)], model=Answer,
+                                                    object_id=answer.id)
+                    like.save()
+
                 i += 1
+
         logger.info('Operation executed in {} seconds'.format(datetime.now().timestamp() - start_time))

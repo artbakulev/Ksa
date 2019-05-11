@@ -1,9 +1,13 @@
 import datetime
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+from configuration import DELETED_USER
 
 
 def user_directory_path(instance, filename):
@@ -11,26 +15,25 @@ def user_directory_path(instance, filename):
 
 
 class LikeManager(models.Manager):
-    def create_like(self, user, obj, action='up-vote'):
+    def create_like(self, user, instance, object_id, action='up-vote'):
         try:
-            like = self.get(user=user)
+            like = self.filter(user=user).get(object_id=object_id)
             if like.is_active and action == 'down-vote':
                 like.is_active = False
-                obj.total_likes -= 1
+                instance.total_likes -= 1
             elif not like.is_active and action == 'up-vote':
                 like.is_active = True
-                obj.total_likes += 1
+                instance.total_likes += 1
             like.save(update_fields=['is_active'])
         except Like.DoesNotExist:
-            like = self.create(user=user)
-            if action == 'like':
-                obj.total_likes += 1
+            like = self.create(user=user, obj=instance, object_id=instance.id)
+            if action == 'up-vote':
+                instance.total_likes += 1
             else:
                 like.is_active = False
             like.save()
-            obj.likes.add(like)
 
-        obj.save(update_fields=['total_likes'])
+        instance.save(update_fields=['total_likes'])
         return like
 
 
@@ -115,6 +118,7 @@ class TagManager(models.Manager):
             tags.append(False)
         return tags
 
+    # TODO: transaction.atomic, select_for_update
     def create_or_update_tag(self, tag):
         try:
             tag = self.get(text=tag)
@@ -151,7 +155,6 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Tag(models.Model):
     objects = TagManager()
-    id = models.AutoField(primary_key=True)
     text = models.CharField(max_length=15, unique=True)
     total = models.IntegerField(default=1)
 
@@ -161,9 +164,11 @@ class Tag(models.Model):
 
 class Like(models.Model):
     objects = LikeManager()
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.SET(13))
+    user = models.ForeignKey(User, models.SET(DELETED_USER))
     is_active = models.BooleanField(default=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    obj = GenericForeignKey('content_type', 'object_id')
 
     def __str__(self):
         return self.user.username
@@ -171,16 +176,13 @@ class Like(models.Model):
 
 class Question(models.Model):
     objects = QuestionManager()
-
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User,
-                             models.SET(13))
+                             models.SET(DELETED_USER))
     title = models.CharField(max_length=50)
     created = models.DateTimeField(default=datetime.datetime.now)
     text = models.CharField(max_length=500)
     tags = models.ManyToManyField(Tag)
     total_answers = models.IntegerField(default=0)
-    likes = models.ManyToManyField(Like)
     total_likes = models.IntegerField(default=0)
 
     def __str__(self):
@@ -189,12 +191,11 @@ class Question(models.Model):
 
 class Answer(models.Model):
     objects = AnswerManager()
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.SET(13))
+
+    user = models.ForeignKey(User, models.SET(DELETED_USER))
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=500)
     created = models.DateTimeField(default=datetime.datetime.now)
-    likes = models.ManyToManyField(Like)
     total_likes = models.IntegerField(default=0)
 
     def __str__(self):
@@ -202,8 +203,7 @@ class Answer(models.Model):
 
 
 class Notification(models.Model):
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, models.SET(13))
+    user = models.ForeignKey(User, models.SET(DELETED_USER))
     TYPE_OF_NOTIFICATIONS_CHOICES = (
         ('ERR', 'Error'),
         ('NEW', "New event"),

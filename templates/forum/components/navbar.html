@@ -3,16 +3,13 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom border-info">
             <div class="container">
-                <a class="navbar-brand" href="/"><strong>KSA</strong></a>
+                <a class="navbar-brand" href="/"><strong><i class="fa fa-crow text-info pr-2"></i><span
+                        class="text-info">KSA</span></strong></a>
                 <button class="navbar-toggler " type="button" data-toggle="collapse"
                         data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                {#                <form class="form-inline my-2 my-lg-0 m-auto">#}
-                {#                    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">#}
-                {#                    <button class="btn btn-outline-info my-2 my-sm-0" type="submit">Search</button>#}
-                {#                </form>#}
                 {% if not user.is_authenticated %}
                     <div class="btn-group" role="group">
                         <button type="button" onclick="location.href = '/auth'" class="btn btn-outline-info">Sign In

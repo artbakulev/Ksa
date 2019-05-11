@@ -40,7 +40,6 @@ class Command(BaseCommand):
         while i < total_questions:
             users = get_random(User, OBJECTS_NUMBER + 1)
             tags = get_random(Tag, OBJECTS_NUMBER + 1)
-            likes = get_random(Like, 2 * OBJECTS_NUMBER + 1)
             for j in range(QUESTIONS_PER_ONE_GENERATION):
                 logger.info('Generate {} / {} question.'.format(i + 1, options['questions']))
                 question = Question(user=users[randint(0, OBJECTS_NUMBER)], title=fake.text(max_nb_chars=50),
@@ -51,9 +50,12 @@ class Command(BaseCommand):
                     tag.total += 1
                     tag.save(update_fields=['total'])
                     question.tags.add(tag)
+
                 likes_total = randint(0, MAX_LIKES_PER_ONE_QUESTION)
-                for q in range(likes_total):
-                    question.likes.add(likes[randint(0, 2 * OBJECTS_NUMBER)])
+                for i in range(likes_total):
+                    like = Like.objects.create_like(user=users[randint(0, OBJECTS_NUMBER)], model=Question,
+                                                    object_id=question.id)
+                    like.save()
                 question.total_likes = likes_total
                 question.save(update_fields=['total_likes'])
                 i += 1

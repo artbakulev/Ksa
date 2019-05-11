@@ -1,10 +1,11 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
 
-from forum.forms import AnswerForm, EditProfileForm
+from forum.forms import AnswerForm, EditProfileForm, RegistrationForm
 from forum.models import Question, Notification, Answer, Tag, Profile, Like
 from forum.scripts.paginator import make_paginator
 
@@ -16,33 +17,39 @@ def index_view(request, page=1):
         sort_key = '-total_answers'
     else:
         sort_key = '-created'
-
     questions = Question.objects.order_by(sort_key)
     context = make_paginator(questions, page, 6)
-
     if context.get('error') is not None:
         raise context['error']
-
-    context['questions'] = context['page']
-    context.pop('page')
-    context['tags'] = Tag.objects.order_by('-total')[:5]
-
+    context['questions'], context['tags'] = context['page'], Tag.objects.order_by('-total')[:5]
     return render(request, 'forum/index.html', context=context)
 
 
+@transaction.atomic
 def registration_view(request):
     if request.method == 'POST':
-        username = request.POST['username']
+        form = RegistrationForm(request.POST)
+        context = {'form': form}
+        if not form.is_valid():
+            return render(request, 'forum/registration.html', context=context)
+
+        username, email, password = form['username'].value(), form['email'].value(), form['password'].value()
+
         if User.objects.filter(username=username).exists():
-            return render(request, 'forum/registration.html', {'error': 'Login "{}" already taken.'.format(username)})
-        email = request.POST['email']
+            context.update({'error': 'Login "{}" already taken.'.format(username)})
+            return render(request, 'forum/registration.html', context=context)
+
         if User.objects.filter(email=email).exists():
-            return render(request, 'forum/registration.html', {'error': 'Email "{}" already in use.'.format(email)})
-        first_name = request.POST['firstName']
-        last_name = request.POST['lastName']
-        password = request.POST['password']
-        user = User.objects.create_user(username=username, email=email, password=password, first_name=first_name,
-                                        last_name=last_name)
+            context.update({'error': 'Email "{}" already taken.'.format(email)})
+            return render(request, 'forum/registration.html', context=context)
+
+        if form['password'].value() != form['repeated_password'].value():
+            context.update({'error': 'Passwords are not the same.'})
+            return render(request, 'forum/registration.html', context=context)
+
+        user = User.objects.create_user(username=username, email=email, password=password,
+                                        first_name=form['first_name'].value(),
+                                        last_name=form['last_name'].value())
         if user is not None:
             user.save()
             user = authenticate(request, username=username, password=password)
@@ -51,8 +58,10 @@ def registration_view(request):
                 return redirect('profile')
             return redirect('index')
         else:
-            return render(request, 'forum/registration.html', {'error': 'Server error. Try again.'})
-    return render(request, 'forum/registration.html')
+            context.update({'error': 'Server error. Try again.'})
+            return render(request, 'forum/registration.html', context=context)
+
+    return render(request, 'forum/registration.html', context={'form': RegistrationForm()})
 
 
 def auth_view(request):
@@ -152,9 +161,9 @@ def tag_view(request, tag_name, page=1):
     return render(request, 'forum/tags_index.html', context=context)
 
 
-def user_view(request, user_name):
+def user_view(request, username):
     try:
-        user = User.objects.get(username=user_name)
+        user = User.objects.get(username=username)
         questions = Question.objects.filter(user=user.id).order_by('created')
         total_answers = 0
         for question in questions:
@@ -173,11 +182,11 @@ def vote_view(request):
     user = request.user
     try:
         vote_object, action, object_id = post['object'], post['action'], post['object_id']
-        if vote_object == 'answer':
-            vote_object = Answer.objects.get(pk=object_id)
-        elif vote_object == 'question':
+        if vote_object == 'question':
             vote_object = Question.objects.get(pk=object_id)
-        Like.objects.create_like(user, vote_object, action)
+        else:
+            vote_object = Answer.objects.get(pk=object_id)
+        Like.objects.create_like(user, instance=vote_object, object_id=object_id, action=action)
         return HttpResponse(vote_object.total_likes, status=200)
     except KeyError:
         return HttpResponse(status=400)
