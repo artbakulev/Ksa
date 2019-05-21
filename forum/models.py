@@ -15,6 +15,15 @@ def user_directory_path(instance, filename):
 
 
 class LikeManager(models.Manager):
+    def is_liked(self, user, object_id):
+        try:
+            like = self.filter(user=user).get(object_id=object_id)
+            if like.is_active:
+                return True
+        except Like.DoesNotExist:
+            pass
+        return False
+
     def create_like(self, user, instance, object_id, action='up-vote'):
         try:
             like = self.filter(user=user).get(object_id=object_id)
@@ -38,47 +47,34 @@ class LikeManager(models.Manager):
 
 
 class ProfileManager(models.Manager):
-
-    # TODO: Порефакторь это
     @staticmethod
     def update_profile_and_user(user, cleaned_data):
-        user_fields_to_update, profile_fields_to_update = [], []
+        user_fields, profile_fields = ['username', 'first_name', 'email'], ['bio', 'avatar']
+        fields_to_update = {'user': [], 'profile': []}
+
         profile = Profile.objects.get(user=user.id)
         user = User.objects.get(pk=user.id)
-        username = cleaned_data.get('login', False)
-        first_name = cleaned_data.get('first_name', False)
-        last_name = cleaned_data.get('last_name', False)
-        email = cleaned_data.get('email', False)
-        bio = cleaned_data.get('bio', False)
-        avatar = cleaned_data.get('avatar', False)
-        if username:
-            user_fields_to_update.append('username')
-            user.username = username
-        if first_name:
-            user_fields_to_update.append('first_name')
-            user.first_name = first_name
-        if last_name:
-            user_fields_to_update.append('last_name')
-            user.last_name = last_name
-        if email:
-            user_fields_to_update.append('email')
-            user.email = email
-        if bio:
-            profile_fields_to_update.append('bio')
-            profile.bio = bio
-        if avatar:
-            profile_fields_to_update.append('avatar')
-            profile.avatar = avatar
 
-        if user_fields_to_update:
-            user.save(update_fields=user_fields_to_update)
-        if profile_fields_to_update:
-            profile.save(update_fields=profile_fields_to_update)
-        user_fields_to_update.extend(profile_fields_to_update)
-        if user_fields_to_update:
+        for key in user_fields:
+            value = cleaned_data.get(key, False)
+            if value:
+                fields_to_update['user'].append(key)
+                setattr(user, key, value)
+
+        for key in profile_fields:
+            value = cleaned_data.get(key, False)
+            if value:
+                fields_to_update['profile'].append(key)
+                setattr(profile, key, value)
+
+        user.save(update_fields=fields_to_update['user'])
+        profile.save(update_fields=fields_to_update['profile'])
+
+        fields_to_update = list(fields_to_update['user'] + fields_to_update['profile'])
+        if fields_to_update:
             notification = Notification.objects.create(user=user, type='NEW', title='Profile updated',
                                                        text='You have updated {}.'.format(
-                                                           (', '.join(user_fields_to_update)).replace('_', ' ')))
+                                                           (', '.join(fields_to_update)).replace('_', ' ')))
             notification.save()
         return user, profile
 

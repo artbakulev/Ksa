@@ -8,6 +8,9 @@ from django.shortcuts import render, redirect
 from forum.forms import AnswerForm, EditProfileForm, RegistrationForm
 from forum.models import Question, Notification, Answer, Tag, Profile, Like
 from forum.scripts.paginator import make_paginator
+from forum.scripts.trunc_number import trunc_number
+
+QUESTIONS_PER_PAGE = 6
 
 
 def index_view(request, page=1):
@@ -17,11 +20,18 @@ def index_view(request, page=1):
         sort_key = '-total_answers'
     else:
         sort_key = '-created'
+
     questions = Question.objects.order_by(sort_key)
-    context = make_paginator(questions, page, 6)
+
+    context = make_paginator(questions, page, QUESTIONS_PER_PAGE)
+
     if context.get('error') is not None:
         raise context['error']
     context['questions'], context['tags'] = context['page'], Tag.objects.order_by('-total')[:5]
+
+    for question in context['questions']:
+        question.is_liked = Like.objects.is_liked(user=request.user, object_id=question.id)
+
     return render(request, 'forum/index.html', context=context)
 
 
@@ -187,6 +197,7 @@ def vote_view(request):
         else:
             vote_object = Answer.objects.get(pk=object_id)
         Like.objects.create_like(user, instance=vote_object, object_id=object_id, action=action)
-        return HttpResponse(vote_object.total_likes, status=200)
+
+        return HttpResponse(trunc_number(vote_object.total_likes), status=200)
     except KeyError:
         return HttpResponse(status=400)

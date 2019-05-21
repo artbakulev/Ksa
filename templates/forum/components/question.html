@@ -1,4 +1,5 @@
 {% load static %}
+{% load forum_extras %}
 
 <li class="media mt-5">
     <img src="{{ question.user.profile.avatar.url }}" width="64px" class="mr-3" alt="test_user">
@@ -9,7 +10,6 @@
             {{ question.text }}
         </p>
         <p>Created by <a href="/users/{{ question.user }}">{{ question.user }}</a></p>
-
         <span class="answers_counter">Answers: {{ question.total_answers }}</span>
         <span class="ml-5">
             Tags:
@@ -21,23 +21,25 @@
         </span>
     </div>
     <div class="like_menu ml-3">
-        <div class="btn-group-vertical m-auto" role="group">
+        <div class="btn-group-vertical m-auto" role="group" data-action="voting">
             <button type="submit"
                     data-object="question"
                     data-action="up-vote"
                     data-user="{{ user.id }}"
                     data-id="{{ question.id }}"
-                    class="btn btn-light vote">
+                    {% if question.is_liked %}
+                    class="btn btn-success vote disabled"
+                    {% else %}
+                    class="btn btn-light vote"
+                    {% endif %}>
                 <i class="fa fa-chevron-up"></i>
             </button>
             <button type="button" class="btn btn-light" id="vote{{ question.id }}"
                     disabled>
                 {% if question.total_likes == -1 %}
                     0
-                    {#                {% elif question.total_likes > 1000 %}#}
-                    {#                    {{ question.total_likes|truncatechars:2 }}K#}
                 {% else %}
-                    {{ question.total_likes }}
+                    {{ question.total_likes|trunc_number }}
                 {% endif %}
             </button>
             <button type="submit"

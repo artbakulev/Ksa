@@ -15,7 +15,7 @@ class RegistrationForm(forms.Form):
 
 
 class EditProfileForm(forms.Form):
-    login = forms.CharField(label='Login', required=False)
+    username = forms.CharField(label='Username', required=False)
     email = forms.CharField(label='Email', required=False)
     first_name = forms.CharField(label='First name', required=False)
     last_name = forms.CharField(label='Last name', required=False)

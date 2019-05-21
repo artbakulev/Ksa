@@ -24,7 +24,7 @@ SECRET_KEY = '5x(nw1_mj1x3mb)t*=tp#6hee4r9xdvo&d02p&em1_d$o)+tb6'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['ksa.me', 'www.ksa.me', 'localhost', '127.0.0.1']
 
 # Application definition
 

@@ -6,6 +6,7 @@ from forum.views import index_view, registration_view, profile_view, auth_view, 
     question_view, profile_edit_view, vote_view, tag_view, user_view
 
 urlpatterns = [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT, }),
     path('ajax_urls/vote/', vote_view, name='vote'),
     path('tags/<tag_name>/<int:page>/', tag_view, name='tag'),
     path('users/<user_name>/', user_view, name='user'),
@@ -19,11 +20,3 @@ urlpatterns = [
     path('<int:page>', index_view, name='index_page'),
     path('', index_view, name='index'),
 ]
-
-# TODO: get rid of this stuff
-if settings.DEBUG:
-    urlpatterns.append(
-        re_path(r'^media/(?P<path>.*)$', serve, {
-            'document_root': settings.MEDIA_ROOT,
-        }),
-    )
